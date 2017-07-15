@@ -1,0 +1,329 @@
+<html>
+<head>
+
+  <title>Task List</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/iron-flex-layout/iron-flex-layout.html">
+  <link rel="import" href="bower_components/iron-ajax/iron-ajax.html">
+  <link rel="import" href="bower_components/iron-list/iron-list.html">
+  <link rel="import" href="bower_components/paper-badge/paper-badge.html">
+  <link rel="import" href="bower_components/paper-item/paper-item.html">
+  <link rel="import" href="bower_components/paper-styles/color.html">
+  <link rel="import" href="bower_components/paper-styles/typography.html">
+  <link rel="import" href="bower_components/iron-icon/iron-icon.html">
+  <link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="bower_components/app-layout/app-drawer/app-drawer.html">
+  <link rel="import" href="bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+  <link rel="import" href="bower_components/app-layout/app-toolbar/app-toolbar.html">
+  <link rel="import" href="bower_components/paper-button/paper-button.html">
+  <link rel="import" href="bower_components/neon-animation/web-animations.html">
+  <link rel="import" href="bower_components/neon-animation/animations/scale-up-animation.html">
+  <link rel="import" href="bower_components/neon-animation/animations/fade-out-animation.html">
+  <link rel="import" href="bower_components/paper-dialog/paper-dialog.html">
+  <link rel="import" href="bower_components/paper-input/paper-input.html">
+  <link rel="import" href="bower_components/paper-toast/paper-toast.html">
+  <link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
+
+</head>
+<body unresolved>
+
+  <dom-module id="x-list">
+    <template>
+      <style>
+      :host {
+        display: block;
+        @apply --paper-font-common-base;
+        font-family: sans-serif;
+      }
+      .content {
+        @apply --layout-vertical;
+        height: 100%;
+      }
+      .white-toolbar {
+        background: white;
+        color: #333;
+      }
+      .blue-toolbar {
+        background: var(--paper-blue-500);
+        color: white;
+      }
+      app-toolbar {
+        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
+        font-size: 18px;
+      }
+      app-drawer {
+        text-align: left;
+        border-left: 1px solid #ccc;
+      }
+      app-toolbar paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+      paper-badge {
+        margin-top: 5px;
+      }
+      paper-badge[label="0"] {
+        opacity: 0;
+      }
+      @media (min-width: 640px) {
+        paper-badge {
+          display: none;
+        }
+      }
+
+      .centered {
+  min-width: 500px;
+}
+demo-snippet {
+  --demo-snippet-code: {
+    max-height: 250px;
+  }
+}
+      #itemsList,
+      #selectedItemsList {
+        @apply --layout-flex;
+      }
+      .item {
+        @apply --layout-horizontal;
+        cursor: pointer;
+        padding: 16px 22px;
+        border-bottom: 1px solid #DDD;
+      }
+      .item:focus,
+      .item.selected:focus {
+        outline: 0;
+        background-color: #ddd;
+      }
+      .item.selected .star {
+        color: var(--paper-blue-600);
+      }
+      .pad {
+        @apply --layout-flex;
+        @apply --layout-vertical;
+        padding: 0 16px;
+      }
+      .primary {
+        font-size: 16px;
+      }
+      .secondary {
+        font-size: 14px;
+      }
+      .dim {
+        color: gray;
+      }
+      .star {
+        width: 24px;
+        height: 24px;
+      }
+      paper-item {
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      paper-item:hover::after {
+        content: "－";
+        width: 16px;
+        height: 16px;
+        display: block;
+        border-radius: 50% 50%;
+        background-color: var(--google-red-300);
+        margin-left: 10px;
+        line-height: 16px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+        position: absolute;
+        right: 15px;
+        top: calc(50% - 8px);
+      }
+      .no-selection {
+        color: #999;
+        margin-left: 10px;
+        line-height: 50px;
+      }
+      iron-list {
+        @apply --layout-flex;
+      }
+
+      </style>
+      <iron-ajax id="ajax" url="http://localhost:8080/Tasklist-backend/api/task-list"
+        last-response="{{items}}" auto
+        on-response="_onResponse"
+        handle-as="json"></iron-ajax>
+
+      <app-drawer-layout fullbleed>
+          <div class="content">
+            <app-toolbar class="blue-toolbar">
+              <div main-title>Lista de Atividades</div>
+              <div>
+                <paper-button raised onclick="dialog.open()">New</paper-button>
+                <paper-button raised class="indigo" on-click="editar">Edit</paper-button>
+                <paper-button raised class="red" on-click="remove">Remove</paper-button>
+              </div>
+            </app-toolbar>
+
+            <paper-dialog id="dialog">
+              <paper-input id="inputtitle" bind-value = "{{title}}" label="Title" maxlength="45" required>Title</paper-input>
+              <paper-checkbox id="check" bind-value = "{{status}}">Finalizada</paper-checkbox>
+              <paper-input id="inputcontent" bind-value = "{{content}}" label="Content" maxlength="45">Content</paper-input>
+              <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button on-click="create" autofocus>Confirm</paper-button>
+              </div>
+            </paper-dialog>
+
+        <iron-list id="itemsList" selected-items="{{selectedItems}}"
+                    selection-enabled items="[[items.result]]" as="item"
+                    on-selected-item-changed="itemChanged">
+          <template>
+              <div>
+                <div tabindex$="[[tabIndex]]" aria-label$="Select/Deselect [[item.id]]" class$="[[_computedClass(selected)]]">
+                  <div class="pad">
+                    <b>[[item.id]] - [[item.title]] - Finalizada: [[item.status]]</b>
+                    <p>[[item.content]]</p>
+                    <p> Data de criação: [[item.dateCreation]] - Data de edição: [[item.dateEdition]] - Data de remoção: [[item.dateRemove]] - Data de conclução: [[item.dateConclusion]] </p>
+                  </div>
+                </div>
+                <div class="border"></div>
+              </div>
+          </template>
+        </iron-list>
+        <app-drawer slot="drawer" align="right">
+          <div class="content">
+            <app-toolbar class="white-toolbar">
+              <div main-title>[[_getFormattedCount(selectedItems.length)]] Selected contacts</div>
+            </app-toolbar>
+            <iron-list id="selectedItemsList" items="[[selectedItems]]" hidden$="[[!selectedItems.length]]">
+              <template>
+                <paper-item tabindex$="[[tabIndex]]" on-tap="_unselect" aria-label$="Deselect [[item.name]]">[[item.name]]</paper-item>
+              </template>
+            </iron-list>
+          </div>
+        </app-drawer>
+      </app-drawer-layout>
+      <paper-toast id="errorMessage" duration="0" text="&Eacute; obrig&aacute;torio informar o titulo da tarefa!">
+                 <paper-button onclick="errorMessage.toggle()" class="yellow-button">Close now!</paper-button>
+      </paper-toast>
+      <paper-toast id="notSelection" duration="0" text="&Eacute; obrig&aacute;torio selecionar uma tarefa!">
+                 <paper-button onclick="notSelection.toggle()" class="yellow-button">Close now!</paper-button>
+      </paper-toast>
+    </template>
+    <script>
+          HTMLImports.whenReady(function() {
+            Polymer({
+              is: 'x-list',
+              properties: {
+                selectedItems: {
+                  type: Object
+                }
+              },
+              _computedClass: function(isSelected) {
+                var classes = 'item';
+                if (isSelected) {
+                  classes += ' selected';
+                }
+                return classes;
+              },
+              _unselect: function(e) {
+                this.$.itemsList.deselectItem(e.model.item);
+              },
+              _getFormattedCount: function(count) {
+                return count > 0 ? '(' + count + ')' : '';
+              },
+              create: function () {
+                this.$.inputtitle.validate();
+                if(this.$.inputtitle.invalid){
+                  this.$.errorMessage.open();
+                  return;
+                }
+                this.$.dialog.toggle();
+                var selected= this.selectedItems;
+                if (selected === undefined || selected === null) {
+                  var url = "http://localhost:8080/Tasklist-backend/api/task-list";
+                  var task_service = new XMLHttpRequest();
+                  task_service.open("POST", url, true);
+                  task_service.setRequestHeader("Content-Type", "application/json");
+                  task_service.onreadystatechange = function() {}
+                  task_service.send(JSON.stringify({title:this.$.inputtitle.value,
+                                                  content:this.$.inputcontent.value, status: this.$.check.checked}));
+                  this.$.inputtitle.value = "";
+                  this.$.inputcontent.value = "";
+                }else{
+                  var url = "http://localhost:8080/Tasklist-backend/api/task-list/"+selected.id;
+                  var task_service = new XMLHttpRequest();
+                  task_service.open("PUT", url, true);
+                  task_service.setRequestHeader("Content-Type", "application/json");
+                  task_service.onreadystatechange = function() {}
+                  task_service.send(JSON.stringify({id:selected.id, title:this.$.inputtitle.value,
+                          content:this.$.inputcontent.value, status: this.$.check.checked,
+                          dateCreation:selected.dateCreation, dateEdition: selected.dateEdition,
+                          dateRemove:selected.dateRemove, dateConclusion:selected.dateConclusion}));
+                  this.$.inputtitle.value = "";
+                  this.$.inputcontent.value = "";
+                }
+              },
+              _updateData: function() {
+                this.async(function() {
+                  this.$.ajax.generateRequest();
+                }, 15000);
+              },
+              _onResponse: function() {
+                console.log('received response');
+                this._updateData();
+              },
+              itemChanged: function(){
+                  if (this.$.itemsList.selectedItem === null) {
+                      this.async(function(){
+                          if (this.$.itemsList.selectedItem === null) {
+                              this.$.itemsList.selectItem(this.selectedItems);
+                          }
+                      }.bind(this));
+                  } else {
+                      this.selectedItems = this.$.itemsList.selectedItem;
+                      var conditional = document.querySelector('dom-if');
+                      conditional.if = true;
+                  }
+              },
+              remove: function () {
+                if (this.selectedItems === undefined || this.selectedItems === null) {
+                    this.$.notSelection.open();
+                    return;
+                }
+
+               var url = "http://localhost:8080/Tasklist-backend/api/task-list/" + this.selectedItems.id;
+               var task_service = new XMLHttpRequest();
+               task_service.open("DELETE", url, true);
+               task_service.onerror = function () {
+                  console.log("** An error occurred during the transaction");
+                };
+               task_service.send(null);
+
+              },
+              editar: function () {
+                if (this.selectedItems === undefined || this.selectedItems === null) {
+                    this.$.notSelection.open();
+                    return;
+                }
+                this.$.inputtitle.value = this.selectedItems.title;
+                this.$.inputcontent.value = this.selectedItems.content;
+                this.$.check.checked = this.selectedItems.status;
+                this.$.dialog.open();
+              }
+            });
+         });
+        </script>
+      </dom-module>
+
+
+  <x-list></x-list>
+
+</body>
+</html>
